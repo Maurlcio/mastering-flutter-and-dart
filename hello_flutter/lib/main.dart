@@ -1,4 +1,72 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'api/jsonFetch.dart';
+
+class UserListScreen extends StatefulWidget {
+  const UserListScreen({super.key});
+
+  @override
+  State<UserListScreen> createState() => _UserListScreenState();
+}
+
+class _UserListScreenState extends State<UserListScreen> {
+  late Future<List<Map<String, dynamic>>> _usersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _usersFuture = fetchUsers().then((users) => users.cast<Map<String, dynamic>>());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("User List"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _usersFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+
+          } else if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                'Failed to load users',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            );
+
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No users found.'));
+
+          } else {
+            final users = snapshot.data!;
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return ListTile(
+                  key: Key('userTile_${user["id"]}'),
+                  title: Text(user['name']),
+                  subtitle: Text(user['email']),
+                  leading: CircleAvatar(
+                    child: Text(user['name'][0]),
+                  ),
+                );
+              },
+            );
+          }
+        },
+      ),
+    );
+  }
+}
 
 void main() {
   runApp(const MyApp());
@@ -19,6 +87,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const HomeScreen(),
         '/details': (context) => const DetailScreen(message: 'Named Route'),
+        '/users': (context) => const UserListScreen(),
       },
     );
   }
@@ -55,7 +124,7 @@ class ProfilePage extends StatelessWidget {
           ProfileCard(
             name: "Random Guy 3",
             description:
-                "yet another purpotedly different description for guy 3",
+                "yet another different description for guy 3",
             imageUrl: "assets/images/im-not-paying-for-this-dawg.jpg",
           ),
           SizedBox(height: 40),
@@ -305,7 +374,7 @@ class _MiniFormWidgetState extends State<MiniFormWidget> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please complete all the fields.")),
+        const SnackBar(content: Text("Please complete all fields!")),
       );
     }
   }
@@ -371,9 +440,9 @@ class _ToggleControlsWidgetState extends State<ToggleControlsWidget> {
 
   String get statusText {
     if (isDarkMode && agreedToTerms) {
-      return "Ready";
+      return ("Ready");
     }
-    return "Incomplete";
+    return ("Incomplete");
   }
 
   @override
@@ -446,12 +515,25 @@ class HomeScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: Center(
-        child: ElevatedButton(
-          key: const Key('goToDetailButton'),
-          onPressed: () {
-            Navigator.pushNamed(context, '/details');
-          },
-          child: const Text("Go to Detail"),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              key: const Key('goToDetailButton'),
+              onPressed: () {
+                Navigator.pushNamed(context, '/details');
+              },
+              child: const Text("Go to Detail"),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              key: const Key('goToUsersButton'),
+              onPressed: () {
+                Navigator.pushNamed(context, '/users');
+              },
+              child: const Text("Go to Users"),
+            ),
+          ],
         ),
       ),
     );
